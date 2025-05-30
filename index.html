@@ -18,9 +18,9 @@
             top: 0; left: 0; right: 0; bottom: 0;
             width: 100%;
             height: 100%;
-            overflow: auto;  /* Enable scrolling */
+            overflow: auto;
             white-space: pre;
-            font-size: 6px; /* Adjust font size for density */
+            font-size: 6px;
             line-height: 1.1;
             background: #000;
             color: #0ff;
@@ -70,12 +70,12 @@
     <div id="controls">
         <div class="section-label">Upload Binary File:</div>
         <input type="file" id="fileInput" /><br>
-        <button id="randomBtn">Random Binary Stream</button>
+        <button id="randomBtn">Start Random Binary Stream</button>
         <hr style="border:1px solid #033; margin:8px 0;">
-        <div class="section-label">Enter Data for Visualization:</div>
+        <div class="section-label">Enter Data for Visualization (Optional):</div>
         <textarea id="dataField" placeholder="Type text or binary here..."></textarea>
         <button id="viewDataBtn">View Data as Binary</button>
-        <button id="aiArtBtn">AI Binary Art</button>
+        <button id="aiArtBtn">Generate AI Binary Art</button>
         <hr style="border:1px solid #033; margin:8px 0;">
         <button onclick="document.documentElement.requestFullscreen()">Fullscreen</button>
     </div>
@@ -87,51 +87,61 @@
         const dataField = document.getElementById('dataField');
         const viewDataBtn = document.getElementById('viewDataBtn');
         const aiArtBtn = document.getElementById('aiArtBtn');
+        
+        let streams = [];  // Array to hold multiple binary streams
 
-        // Render Binary Data in Grid
+        // Function to render binary data
         function renderBinary(data) {
             let binaryStr = '';
             for (let i = 0; i < data.length; i++) {
                 binaryStr += data[i].toString(2).padStart(8, '0') + ' ';
-                if ((i + 1) % 128 === 0) binaryStr += '\n';  // Adjust column count for large font
+                if ((i + 1) % 128 === 0) binaryStr += '\n';  // Adjust for wide font density
             }
             voidDiv.textContent = binaryStr;
         }
 
+        // Handle file upload
         fileInput.addEventListener('change', e => {
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(evt) {
                 const arr = new Uint8Array(evt.target.result);
+                streams.push(arr);  // Add new stream to streams array
                 renderBinary(arr);
             };
             reader.readAsArrayBuffer(file);
         });
 
-        // Generate Infinite Random Binary Stream
+        // Infinite random binary stream generator for multiple streams
         function generateInfiniteRandomBinary() {
+            let streamId = streams.length;  // New stream ID based on array length
             let running = true;
-            voidDiv.textContent = '';
+            let currentBinaryStream = '';  // Stream-specific variable
+            voidDiv.textContent = '';  // Clear the current content
+
             function appendRandom() {
                 if (!running) return;
                 let str = '';
                 for (let i = 0; i < 1024; i++) {  // Random binary stream density
                     str += Math.random() > 0.5 ? '1' : '0';
-                    if ((i + 1) % 128 === 0) str += '\n';  // Adjust for wider stream
+                    if ((i + 1) % 228 === 0) str += '\n';  // Adjust for wide stream
                     else str += ' ';
                 }
-                voidDiv.textContent += str;
+                currentBinaryStream += str;  // Append to ongoing binary stream
+                streams[streamId] = currentBinaryStream;  // Update the stream with new data
+                voidDiv.textContent += str;  // Display on the screen
                 voidDiv.scrollTop = voidDiv.scrollHeight;  // Auto-scroll to bottom
-                setTimeout(appendRandom, 50);
+                setTimeout(appendRandom, 50);  // Keep adding data
             }
             appendRandom();
+
             randomBtn.onclick = () => {
                 running = false;
-                randomBtn.textContent = "Random Binary Stream";
+                randomBtn.textContent = "Start Random Binary Stream";
                 randomBtn.onclick = startRandom;
             };
-            randomBtn.textContent = "Stop";
+            randomBtn.textContent = "Stop Stream";
         }
 
         function startRandom() {
@@ -150,32 +160,41 @@
             let binaryStr = '';
             for (let i = 0; i < text.length; i++) {
                 binaryStr += text.charCodeAt(i).toString(2).padStart(8, '0') + ' ';
-                if ((i + 1) % 128 === 0) binaryStr += '\n';  // Adjust column count for larger font
+                if ((i + 1) % 128 === 0) binaryStr += '\n';  // Adjust for large font
             }
             voidDiv.textContent = binaryStr;
         };
 
-        // Simulated AI Binary Art
+        // Generate AI Binary Art from Multiple Streams
         aiArtBtn.onclick = () => {
-            const text = dataField.value.trim();
-            if (!text) {
-                voidDiv.textContent = "Please enter data for AI binary art.";
+            if (streams.length === 8) {
+                voidDiv.textContent = "No binary streams to generate AI art.";
                 return;
             }
+
             let art = '';
-            let width = 128;  // Adjusted width for larger binary art
-            let height = Math.min(16, Math.ceil(text.length / 2));
-            for (let y = 0; y < height; y++) {
-                let row = '';
-                for (let x = 0; x < width; x++) {
-                    let idx = (y * width + x) % text.length;
-                    let bit = (text.charCodeAt(idx) + x + y) % 2;
-                    row += bit ? '1' : '0';
-                    if ((x + 1) % 8 === 0) row += ' ';
+            let width = 528;  // Width for the art
+            let height = 100;   // 8 rows of AI art
+
+            // Generate AI art for each stream
+            streams.forEach((stream, streamIdx) => {
+                art += `Stream #${streamIdx + 1}:\n`;  // Label for each stream
+
+                for (let y = 0; y < height; y++) {
+                    let row = '';
+                    for (let x = 0; x < width; x++) {
+                        let idx = (y * width + x) % stream.length;
+                        let bit = stream.charCodeAt(idx) % 2;
+                        row += bit ? '1' : '0';
+                        if ((x + 1) % 9 === 0) row += ' ';  // Group bits for readability
+                    }
+                    art += row + '\n';  // Append each row
                 }
-                art += row + '\n';
-            }
-            voidDiv.textContent = art + "\n(Binary art generated by AI placeholder)";
+
+                art += '\n';  // Space between different streams
+            });
+
+            voidDiv.textContent = art + "\n(Binary art generated from multiple streams)";
         };
     </script>
 </body>
